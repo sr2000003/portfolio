@@ -1,208 +1,872 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Portfolio of Siddharth Rana, Full Stack Developer" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Portfolio of Siddharth Rana, Full Stack Developer">
   <title>Siddharth Rana | Portfolio</title>
+  <!-- ABOVE: page metadata (character set, mobile scaling, SEO description, browser-tab title). -->
 
   <style>
-    /* ... (CSS variables and base styles remain identical for brevity) ... */
+    /* ==========================================================================
+       1. DESIGN TOKENS — one place to change the whole colour scheme
+       ========================================================================== */
     :root {
-      --bg-light: #f8fafc;
-      --text-main: #1e293b;
-      --text-muted: #475569;
-      --brand-primary: #4f46e5;
-      --brand-secondary: #6366f1;
-      --nav-bg: #020617;
-      --card-bg: #ffffff;
-      --skill-bg: #e0e7ff;
-      --skill-text: #1e3a8a;
+      --bg: #0a0f1e;            /* page background (deep navy) */
+      --surface: #111a30;       /* card background */
+      --surface-2: #0e1529;     /* slightly darker panels (code card) */
+      --border: #1e2a47;        /* default thin borders */
+      --border-strong: #2b3a5e; /* borders on hover / emphasis */
+      --text: #e6eaf2;          /* primary text */
+      --muted: #94a3b8;         /* secondary text */
+      --accent: #3b82f6;        /* primary accent (professional blue) */
+      --accent-2: #14b8a6;      /* secondary accent (teal) */
+      --grad: linear-gradient(90deg, #3b82f6, #14b8a6); /* brand gradient */
     }
+    /* FUNCTION: defines every colour once as a CSS variable. Edit these to re-theme the whole site. */
 
+    /* ==========================================================================
+       2. RESET & BASE
+       ========================================================================== */
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; }
-    body { font-family: "Segoe UI", system-ui, -apple-system, sans-serif; background: var(--bg-light); color: var(--text-main); line-height: 1.6; }
-    
-    header { background: linear-gradient(135deg, #0f172a, #1e293b); color: white; padding: 80px 20px; text-align: center; }
-    header h1 { font-size: 2.5rem; margin-bottom: 0.5rem; }
-    header p { font-size: 1.125rem; opacity: 0.9; }
+    html { scroll-behavior: smooth; scroll-padding-top: 80px; }
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+      overflow-x: hidden;
+    }
+    a { color: inherit; }
+    ::selection { background: var(--accent); color: #fff; }
+    /* FUNCTION: removes browser default spacing, sets the font/background, enables smooth anchor
+       scrolling (offset so the fixed navbar doesn't cover headings), and styles text selection. */
 
-    nav { background: var(--nav-bg); padding: 15px; position: sticky; top: 0; z-index: 100; text-align: center; }
-    nav a { color: #cbd5f5; margin: 0 15px; text-decoration: none; font-weight: 500; transition: color 0.3s ease; }
-    nav a:hover { color: white; }
+    #bg-canvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+    main, footer, header.hero { position: relative; z-index: 1; }
+    /* FUNCTION: the particle canvas sits fixed behind the page; real content is layered above it. */
 
-    section { max-width: 1000px; margin: 0 auto; padding: 60px 20px; }
-    h2 { color: var(--nav-bg); border-bottom: 3px solid var(--brand-secondary); display: inline-block; margin-bottom: 30px; }
+    /* Soft drifting colour glows behind the page */
+    .aurora { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+    .aurora i {
+      position: absolute; width: 55vw; height: 55vw; border-radius: 50%;
+      filter: blur(110px); opacity: 0.16;
+    }
+    .aurora i:nth-child(1) { background: #3b82f6; top: -20vw; left: -15vw; animation: drift1 22s ease-in-out infinite alternate; }
+    .aurora i:nth-child(2) { background: #14b8a6; bottom: -25vw; right: -15vw; animation: drift2 26s ease-in-out infinite alternate; }
+    @keyframes drift1 { to { transform: translate(18vw, 14vw) scale(1.15); } }
+    @keyframes drift2 { to { transform: translate(-16vw, -12vw) scale(1.1); } }
+    /* FUNCTION: two large blurred blue/teal blobs slowly drift, giving the background gentle depth and motion. */
 
-    .skills { list-style: none; display: flex; flex-wrap: wrap; gap: 10px; }
-    .skills li { background: var(--skill-bg); color: var(--skill-text); padding: 8px 16px; border-radius: 20px; font-size: 0.9rem; font-weight: 500; }
+    #spotlight {
+      position: fixed; top: 0; left: 0; width: 600px; height: 600px; margin: -300px 0 0 -300px;
+      border-radius: 50%; pointer-events: none; z-index: 0;
+      background: radial-gradient(circle, rgba(59, 130, 246, 0.10), transparent 65%);
+      will-change: transform;
+    }
+    @media (hover: none) { #spotlight { display: none; } }
+    /* FUNCTION: a soft blue light that follows the mouse cursor (hidden on touch devices). */
 
+    #progress {
+      position: fixed; top: 0; left: 0; height: 3px; width: 0;
+      background: var(--grad); z-index: 2000;
+    }
+    /* FUNCTION: thin bar at the very top that fills as you scroll down the page. */
+
+    /* ==========================================================================
+       3. NAVBAR (dark glass + sliding underline)
+       ========================================================================== */
+    nav.main-navigation {
+      position: fixed; top: 0; left: 0; width: 100%; z-index: 1000;
+      background: rgba(10, 15, 30, 0.72);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+    }
+    .nav-inner {
+      max-width: 1200px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between; gap: 24px;
+      padding: 14px 24px;
+    }
+    /* FUNCTION: fixed, frosted-glass navigation bar that stays at the top while scrolling. */
+
+    .logo {
+      font-size: 1.35rem; font-weight: 700; color: #fff;
+      text-decoration: none; letter-spacing: 0.3px;
+      transition: transform 0.2s ease;
+    }
+    .logo .dot { color: var(--accent); }
+    .logo:hover { transform: scale(1.05); }
+    /* FUNCTION: the "Siddharth.Rana" brand text; the dot is accent-coloured and the logo grows on hover. */
+
+    .nav-links { position: relative; display: flex; gap: 34px; list-style: none; margin-left: auto; }
+    .nav-links a {
+      display: block; padding: 6px 0;
+      color: #aab6cc; text-decoration: none;
+      font-size: 0.8rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 1.2px;
+      transition: color 0.25s;
+    }
+    .nav-links a:hover, .nav-links a.active { color: #fff; }
+    .nav-indicator {
+      position: absolute; bottom: -4px; left: 0; height: 3px; width: 0;
+      border-radius: 2px; background: var(--grad);
+      box-shadow: 0 0 12px rgba(59, 130, 246, 0.7);
+      transition: transform 0.4s cubic-bezier(0.65, 0, 0.35, 1), width 0.4s cubic-bezier(0.65, 0, 0.35, 1);
+      pointer-events: none;
+    }
+    /* FUNCTION: desktop menu links; the active one turns white and a gradient underline slides under it. */
+
+    .menu-btn {
+      display: none; background: none; border: none;
+      color: #fff; font-size: 1.8rem; cursor: pointer; padding: 4px 8px;
+      transition: transform 0.2s;
+    }
+    .menu-btn:hover { transform: scale(1.1); }
+    .mobile-menu {
+      display: none; flex-direction: column; gap: 4px;
+      background: #0d1326; margin: 0 16px 12px;
+      padding: 12px; border-radius: 0 0 16px 16px;
+      border: 1px solid var(--border);
+    }
+    .mobile-menu.open { display: flex; animation: dropIn 0.3s ease; }
+    .mobile-menu a {
+      padding: 12px 16px; border-radius: 8px;
+      color: #cbd5e1; text-decoration: none; font-size: 0.9rem; font-weight: 500;
+      transition: all 0.3s;
+    }
+    .mobile-menu a:hover { color: #fff; background: rgba(59, 130, 246, 0.12); }
+    @keyframes dropIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: none; } }
+    /* FUNCTION: hamburger button + dropdown menu used on phones/tablets, with a small slide-down animation. */
+
+    /* ==========================================================================
+       4. BUTTONS (shared by nav, hero, contact)
+       ========================================================================== */
+    .btn {
+      position: relative; overflow: hidden;
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 13px 28px; border-radius: 10px;
+      font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+      text-decoration: none; color: #fff; cursor: pointer; border: 1px solid transparent;
+      transition: transform 0.25s ease, box-shadow 0.3s ease, background 0.3s, border-color 0.3s;
+    }
+    .btn svg { width: 16px; height: 16px; transition: transform 0.3s; }
+    .btn:hover svg { transform: translateY(2px); }
+    .btn-fill { background: var(--grad); box-shadow: 0 8px 24px -8px rgba(59, 130, 246, 0.6); }
+    .btn-fill:hover { box-shadow: 0 12px 32px -6px rgba(59, 130, 246, 0.75); }
+    .btn-outline { background: transparent; border-color: var(--border-strong); }
+    .btn-outline:hover { border-color: var(--accent); background: rgba(59, 130, 246, 0.1); }
+    .btn-ghost { background: rgba(148, 163, 184, 0.08); }
+    .btn-ghost:hover { background: rgba(148, 163, 184, 0.16); }
+    .btn-sm { padding: 9px 18px; font-size: 0.72rem; }
+    .ripple {
+      position: absolute; border-radius: 50%; background: rgba(255, 255, 255, 0.35);
+      transform: scale(0); animation: ripple 0.6s ease-out forwards; pointer-events: none;
+    }
+    @keyframes ripple { to { transform: scale(4); opacity: 0; } }
+    /* FUNCTION: one reusable button style with three looks (fill / outline / ghost) plus a click-ripple effect. */
+
+    /* ==========================================================================
+       5. HERO
+       ========================================================================== */
+    header.hero {
+      min-height: 100vh;
+      display: flex; align-items: center;
+      padding: 110px 24px 60px;
+    }
+    .hero-grid {
+      max-width: 1200px; margin: 0 auto; width: 100%;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center;
+    }
+    .hero h1 { font-size: clamp(1.9rem, 4vw, 2.9rem); line-height: 1.25; font-weight: 800; color: #fff; }
+    .hero h1 .accent {
+      background: var(--grad); -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent; color: transparent;
+    }
+    .hero h1 .accent-2 { color: var(--accent-2); }
+    .hero .tagline { margin-top: 16px; color: var(--muted); font-size: 1.1rem; min-height: 1.8em; }
+    .hero .tagline span { display: inline-block; }
+    .hero .tagline .swap { animation: swapIn 0.5s ease both; }
+    @keyframes swapIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+    /* FUNCTION: big headline with a gradient name; the tagline underneath rotates through your roles. */
+
+    .social-row { display: flex; gap: 12px; margin: 26px 0; flex-wrap: wrap; }
+    .social-row a {
+      color: #cbd5e1; text-decoration: none; font-weight: 600; font-size: 0.88rem;
+      padding: 8px 16px; border: 1px solid var(--border); border-radius: 999px;
+      transition: transform 0.3s, border-color 0.3s, color 0.3s, background 0.3s;
+    }
+    .social-row a:hover { border-color: var(--accent); color: #fff; background: rgba(59, 130, 246, 0.1); }
+    .btn-row { display: flex; gap: 14px; flex-wrap: wrap; }
+    /* FUNCTION: pill-shaped social links and the row that holds the hero call-to-action buttons. */
+
+    .code-card {
+      position: relative; border-radius: 14px;
+      background: var(--surface-2); border: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .code-card::before {
+      content: ""; display: block; height: 2px; background: var(--grad);
+    }
+    .code-card .dots { display: flex; gap: 8px; padding: 14px 20px; }
+    .code-card .dots i { width: 12px; height: 12px; border-radius: 50%; display: block; }
+    .code-card .dots i:nth-child(1) { background: #f87171; }
+    .code-card .dots i:nth-child(2) { background: #fbbf24; }
+    .code-card .dots i:nth-child(3) { background: #34d399; }
+    .code-body {
+      border-top: 1px solid var(--border); padding: 22px 24px;
+      font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+      font-size: 0.92rem; line-height: 1.8; white-space: pre-wrap; min-height: 330px;
+    }
+    .k { color: #60a5fa; } .w { color: #f1f5f9; } .g { color: #64748b; }
+    .s { color: #5eead4; } .o { color: #fbbf24; } .c { color: #38bdf8; } .gr { color: #34d399; }
+    .caret { display: inline-block; width: 8px; height: 1em; background: var(--accent); vertical-align: -2px; animation: blink 1s steps(1) infinite; }
+    @keyframes blink { 50% { opacity: 0; } }
+    /* FUNCTION: editor-style window that shows the typed "developer" object; colour classes mimic syntax highlighting. */
+
+    /* ==========================================================================
+       6. SECTIONS & CARDS
+       ========================================================================== */
+    section { max-width: 1100px; margin: 0 auto; padding: 90px 24px; }
+    .eyebrow { font-size: 0.9rem; color: var(--accent-2); text-transform: uppercase; letter-spacing: 3px; font-weight: 600; }
+    h2.title { font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 800; color: #fff; line-height: 1.15; margin-bottom: 36px; }
+    h2.title::after {
+      content: ""; display: block; width: 0; height: 4px; margin-top: 10px;
+      background: var(--grad); border-radius: 4px;
+      transition: width 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.3s;
+    }
+    .in h2.title::after, h2.title.in::after { width: 70px; }
+    /* FUNCTION: shared section layout and heading style; the gradient underline "draws itself" when the heading scrolls into view. */
+
+    .about-text { color: #cbd5e1; font-size: 1.05rem; max-width: 900px; }
+    .about-text p + p { margin-top: 16px; }
+    /* FUNCTION: readable paragraph styling for the About section. */
+
+    .glow {
+      position: relative; border-radius: 16px;
+      background: var(--surface); border: 1px solid var(--border);
+      overflow: hidden;
+      transition: border-color 0.4s, box-shadow 0.4s;
+    }
+    .glow::before {
+      content: ""; position: absolute; inset: 0; pointer-events: none;
+      background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 50%), rgba(59, 130, 246, 0.16), transparent 45%);
+      opacity: 0; transition: opacity 0.4s;
+    }
+    .glow:hover { border-color: var(--border-strong); box-shadow: 0 18px 44px -14px rgba(59, 130, 246, 0.35); }
+    .glow:hover::before { opacity: 1; }
+    /* FUNCTION: card style with a blue light that follows the mouse inside the card (position set by JS). */
+
+    .tilt { transform-style: preserve-3d; transition: transform 0.15s ease-out; will-change: transform; }
+    .tilt .glare {
+      position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+      background: radial-gradient(circle at var(--gx, 50%) var(--gy, 50%), rgba(255, 255, 255, 0.10), transparent 55%);
+      opacity: 0; transition: opacity 0.3s;
+    }
+    .tilt:hover .glare { opacity: 1; }
+    /* FUNCTION: enables the 3D tilt on hover and adds a soft white glare that follows the pointer. */
+
+    .exp-card { padding: 28px; }
+    .exp-head { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .exp-head h3 { color: #fff; font-size: 1.25rem; }
+    .exp-head span.role { display: block; color: var(--accent-2); font-size: 0.95rem; margin-top: 2px; font-weight: 600; }
+    .exp-card p { margin-top: 16px; color: #cbd5e1; }
+    /* FUNCTION: styling for the Team Krian experience card. */
+
+    .skills { list-style: none; display: flex; flex-wrap: wrap; gap: 12px; }
+    .skills li {
+      padding: 10px 20px; border-radius: 10px;
+      background: rgba(59, 130, 246, 0.08);
+      border: 1px solid rgba(59, 130, 246, 0.25);
+      color: #bfdbfe; font-size: 0.92rem; font-weight: 500;
+      transition: transform 0.3s, color 0.3s, border-color 0.3s, background 0.3s, box-shadow 0.3s;
+      cursor: default;
+    }
+    .skills li:hover {
+      transform: translateY(-4px) scale(1.06);
+      color: #fff; border-color: var(--accent); background: rgba(59, 130, 246, 0.2);
+      box-shadow: 0 10px 24px -8px rgba(59, 130, 246, 0.6);
+    }
+    /* FUNCTION: skill "chips" that lift and brighten when hovered. */
+
+    .carousel-wrap { position: relative; }
     .carousel-container {
-      display: flex;
-      overflow-x: auto;
-      gap: 24px;
-      scroll-snap-type: x mandatory;
-      scroll-behavior: smooth;
-      padding-bottom: 20px; 
-      scrollbar-width: none; 
-      -ms-overflow-style: none; 
+      display: flex; gap: 24px; overflow-x: auto; padding: 10px 4px 24px;
+      scroll-snap-type: x mandatory; scroll-behavior: smooth;
+      scrollbar-width: none; -ms-overflow-style: none;
     }
-    
     .carousel-container::-webkit-scrollbar { display: none; }
-    .carousel-container .card { min-width: 300px; flex: 0 0 auto; scroll-snap-align: start; }
+    .carousel-container .card { min-width: 320px; flex: 0 0 auto; scroll-snap-align: start; }
+    /* FUNCTION: horizontal swipeable row; each card snaps into place; the scrollbar is hidden. */
 
-    .card { background: var(--card-bg); border-radius: 12px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); transition: transform 0.2s ease, box-shadow 0.2s ease; display: flex; flex-direction: column; }
-    .card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-    .card h3 { margin-bottom: 10px; color: var(--nav-bg); }
-    .card p { color: var(--text-muted); margin-bottom: 15px; flex-grow: 1; }
-    
-    .card a { 
-      text-decoration: none; 
-      color: var(--brand-primary); 
-      font-weight: 600; 
-      align-self: flex-start;
-      position: relative;
-      z-index: 10; 
+    .card { padding: 26px; display: flex; flex-direction: column; min-height: 250px; }
+    .card h3 { color: #fff; font-size: 1.25rem; margin-bottom: 12px; }
+    .card p { color: #cbd5e1; font-size: 0.95rem; margin-bottom: 18px; flex-grow: 1; }
+    .card p strong { color: var(--accent-2); }
+    .card a.link {
+      align-self: flex-start; position: relative; z-index: 10;
+      text-decoration: none; font-weight: 700; color: #60a5fa;
+      transition: color 0.3s;
     }
-    .card a:hover { text-decoration: underline; }
+    .card a.link::after { content: " →"; display: inline-block; transition: transform 0.3s; }
+    .card a.link:hover { color: #fff; }
+    .card a.link:hover::after { transform: translateX(6px); }
+    /* FUNCTION: project/certificate card contents; the link's arrow slides right on hover. */
 
-    footer { background: var(--nav-bg); color: #cbd5f5; text-align: center; padding: 30px; margin-top: 40px; }
+    .car-btns { display: flex; gap: 10px; justify-content: flex-end; margin-bottom: 14px; }
+    .car-btns button {
+      width: 42px; height: 42px; border-radius: 50%;
+      background: rgba(148, 163, 184, 0.06); border: 1px solid var(--border-strong);
+      color: #fff; font-size: 1.1rem; cursor: pointer;
+      transition: background 0.3s, transform 0.25s, border-color 0.3s;
+    }
+    .car-btns button:hover { background: rgba(59, 130, 246, 0.25); border-color: var(--accent); }
+    /* FUNCTION: round previous/next arrows for the carousels. */
+
+    .contact-card { padding: 32px; max-width: 640px; }
+    .contact-card p { margin: 10px 0; color: #cbd5e1; }
+    .contact-card p span { color: var(--muted); display: inline-block; min-width: 90px; }
+    .contact-card a:not(.btn) {
+      color: #60a5fa; text-decoration: none; font-weight: 600;
+      background: linear-gradient(var(--accent), var(--accent)) left bottom / 0 2px no-repeat;
+      transition: background-size 0.3s;
+    }
+    .contact-card a:not(.btn):hover { background-size: 100% 2px; }
+    .contact-card .btn { margin-top: 20px; }
+    /* FUNCTION: contact details card; links get an underline that draws in on hover. */
+
+    footer { text-align: center; padding: 34px; color: #94a3b8; border-top: 1px solid var(--border); background: rgba(5, 8, 20, 0.75); }
+    /* FUNCTION: simple dark footer with a top divider. */
+
+    /* ==========================================================================
+       7. SCROLL-REVEAL TRANSITIONS
+       ========================================================================== */
+    [data-reveal] {
+      opacity: 0;
+      transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+      transition-delay: var(--d, 0s);
+    }
+    [data-reveal="up"]    { transform: translateY(60px); }
+    [data-reveal="down"]  { transform: translateY(-50px); }
+    [data-reveal="left"]  { transform: translateX(-70px); }
+    [data-reveal="right"] { transform: translateX(70px); }
+    [data-reveal="zoom"]  { transform: scale(0.85); }
+    [data-reveal].in { opacity: 1; transform: none; }
+    /* FUNCTION: elements start hidden and offset; JS adds ".in" when they scroll into view so they slide/fade in. */
+
+    /* ==========================================================================
+       8. RESPONSIVE + ACCESSIBILITY
+       ========================================================================== */
+    @media (max-width: 820px) {
+      .nav-links, .nav-resume { display: none; }
+      .menu-btn { display: block; }
+      .hero-grid { grid-template-columns: 1fr; }
+      .hero-grid > .code-wrap { order: -1; }
+      .code-body { font-size: 0.78rem; min-height: 280px; }
+      .carousel-container .card { min-width: 270px; }
+      section { padding: 70px 20px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+      [data-reveal] { opacity: 1; transform: none; }
+      h2.title::after { width: 70px; }
+    }
+    /* FUNCTION: rearranges the layout for small screens, and switches animations off for users who prefer reduced motion. */
   </style>
 </head>
 
 <body>
+  <div class="aurora"><i></i><i></i></div>
+  <div id="spotlight"></div>
+  <div id="progress"></div>
+  <canvas id="bg-canvas"></canvas>
+  <!-- ABOVE: background layers — drifting glows, cursor spotlight, scroll progress bar and particle canvas. -->
 
-<header>
-  <h1>Siddharth Rana</h1>
-  <p>Full Stack Developer | React & Firebase Specialist | Problem Solver</p>
-</header>
+  <!-- NAVBAR -->
+  <nav class="main-navigation" aria-label="Main Navigation">
+    <div class="nav-inner">
+      <a class="logo" href="#home">Siddharth<span class="dot">.</span>Rana</a>
+      <ul class="nav-links" id="navLinks">
+        <li><a href="#about">About</a></li>
+        <li><a href="#skills">Skills</a></li>
+        <li><a href="#projects">Projects</a></li>
+        <li><a href="#certifications">Certifications</a></li>
+        <li><a href="#contact">Contact</a></li>
+        <li class="nav-indicator" id="navIndicator" aria-hidden="true"></li>
+      </ul>
+      <!-- RESUME: replace "resume.pdf" with your real file later -->
+      <button class="menu-btn" id="menuBtn" aria-label="Toggle menu">☰</button>
+    </div>
+    <div class="mobile-menu" id="mobileMenu">
+      <a href="#about">About</a>
+      <a href="#skills">Skills</a>
+      <a href="#projects">Projects</a>
+      <a href="#certifications">Certifications</a>
+      <a href="#contact">Contact</a>
+      <a href="resume.pdf" download="SiddharthRana_resume.pdf">Download Resume</a>
+    </div>
+  </nav>
+  <!-- FUNCTION: top navigation. Desktop shows links + a Resume button; phones show the ☰ dropdown. Link clicks jump to sections. -->
 
-<nav aria-label="Main Navigation">
-  <a href="#about">About</a>
-  <a href="#skills">Skills</a>
-  <a href="#projects">Projects</a>
-  <a href="#certifications">Certifications</a>
-  <a href="#contact">Contact</a>
-</nav>
+  <!-- HERO -->
+  <header class="hero" id="home">
+    <div class="hero-grid">
+      <div data-reveal="left">
+        <h1>
+          Hello,<br>This is <span class="accent">Siddharth Rana</span>, a
+          <span class="accent-2">Full Stack Developer</span>.
+        </h1>
+        <p class="tagline"><span id="roleRotator">React &amp; Firebase Specialist</span></p>
+        <div class="social-row">
+          <a href="https://github.com/sr2000003" target="_blank" rel="noopener noreferrer">GitHub</a>
+          <a href="https://linkedin.com/in/siddharthrana03" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+          <a href="mailto:sr2000003@gmail.com">Email</a>
+        </div>
+        <div class="btn-row">
+          <!-- RESUME: replace "resume.pdf" with your real file later -->
+          <a class="btn btn-fill" href="resume.pdf" download="SiddharthRana_resume.pdf">
+            Download Resume
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>
+          </a>
+          <a class="btn btn-outline" href="#projects">View Projects →</a>
+          <a class="btn btn-ghost" href="#contact">Contact →</a>
+        </div>
+      </div>
 
-<section id="about">
-  <h2>About Me</h2>
-  <p>I worked as a Coordinator at Team Krian (a manufacturer for brands like Mango, Zara, H&M, Sky, and Baby Cotton), where I managed billing, maintained the ERP system, and assisted the production and merchandising teams. I also created an automated challan system that saved time and increased efficiency, streamlined client billing and payments, and ensured all shipments stayed on budget.
+      <div class="code-wrap" data-reveal="right">
+        <div class="code-card glow tilt" id="heroCard">
+          <div class="dots"><i></i><i></i><i></i></div>
+          <div class="code-body"><code id="typed"></code><span class="caret"></span></div>
+          <div class="glare"></div>
+        </div>
+      </div>
+    </div>
+  </header>
+  <!-- FUNCTION: first screen. Left: greeting, rotating tagline, social links and the buttons (including Download Resume).
+       Right: the editor-style code card that types itself out. -->
 
-On the technical side, I am skilled in HTML, CSS, JavaScript, Node.js, C, Python, Data Structures and Algorithms, Git/GitHub, and prompt engineering, with several projects available on my GitHub. I have also completed an AWS Foundation course and three Claude courses: Building with the API, Building Effective Human-Agent Teams, and Basics of the Model Context Protocol.</p>
-</section>
+  <main>
+    <!-- ABOUT -->
+    <section id="about">
+      <div data-reveal="down">
+        <p class="eyebrow">Introduction</p>
+        <h2 class="title">About Me</h2>
+      </div>
 
-<section id="skills">
-  <h2>Skills</h2>
-  <ul class="skills">
-    <li>React.js</li><li>Vite</li><li>Node.js</li><li>Firebase</li><li>Python</li><li>JavaScript</li><li>Java</li><li>HTML/CSS</li><li>Git & GitHub</li><li>SQL</li><li>AI/ML</li>
-  </ul>
-</section>
+      <div class="about-text" data-reveal="up">
+        <p>I worked as a Coordinator at Team Krian (a manufacturer for brands like Mango, Zara, H&amp;M, Sky, and Baby Cotton), where I managed billing, maintained the ERP system, and assisted the production and merchandising teams. I also created an automated challan system that saved time and increased efficiency, streamlined client billing and payments, and ensured all shipments stayed on budget.</p>
+        <p>On the technical side, I am skilled in HTML, CSS, JavaScript, Node.js, C, Python, Data Structures and Algorithms, Git/GitHub, and prompt engineering, with several projects available on my GitHub. I have also completed an AWS Foundation course and three Claude courses: Building with the API, Building Effective Human-Agent Teams, and Basics of the Model Context Protocol.</p>
+      </div>
 
-<section id="projects">
-  <h2>Real-World Projects</h2>
-  <div class="carousel-container" id="projects-carousel">
-    <article class="card">
-      <h3>Canteen Ticket Digitization</h3>
-      <p>Built a full-stack React/Vite/Firebase app with OTP login and real-time Firestore admin panel to replace manual spreadsheet workflows.</p>
-      <a href="https://github.com/sr2000003/canteen-app" target="_blank" rel="noopener noreferrer">View on GitHub</a>
-    </article>
+      <div class="glow exp-card" data-reveal="zoom" style="margin-top:40px; --d:.15s">
+        <div class="exp-head">
+          <div>
+            <h3>Team Krian</h3>
+            <span class="role">Coordinator</span>
+          </div>
+        </div>
+        <p>Managed billing, maintained the ERP system, and supported production and merchandising teams for brands like Mango, Zara, H&amp;M, Sky, and Baby Cotton. Built an automated challan system that saved time and kept shipments on budget.</p>
+      </div>
+    </section>
+    <!-- FUNCTION: your bio plus a highlighted experience card. -->
 
-    <article class="card">
-      <h3>Inventory Centralization & Challan</h3>
-      <p>Automated document creation using Google Forms and WhatsApp APIs while centralizing inventory on the World Fashion Exchange ERP.</p>
-      <a href="https://github.com/sr2000003/Challan_Automation" target="_blank" rel="noopener noreferrer">View on GitHub</a>
-    </article>
+    <!-- SKILLS -->
+    <section id="skills">
+      <div data-reveal="down">
+        <p class="eyebrow">What I Do</p>
+        <h2 class="title">Skills</h2>
+      </div>
+      <ul class="skills">
+        <li data-reveal="up">React.js</li><li data-reveal="up">Vite</li><li data-reveal="up">Node.js</li>
+        <li data-reveal="up">Firebase</li><li data-reveal="up">Python</li><li data-reveal="up">JavaScript</li>
+        <li data-reveal="up">Java</li><li data-reveal="up">HTML/CSS</li><li data-reveal="up">Git &amp; GitHub</li>
+        <li data-reveal="up">SQL</li><li data-reveal="up">AI/ML</li>
+      </ul>
+    </section>
+    <!-- FUNCTION: list of technologies shown as chips that appear one after another. -->
 
-    <article class="card">
-      <h3>Weather Forecast Dashboard</h3>
-      <p>A dynamic web application providing real-time weather tracking and forecasting utilizing asynchronous API integrations.</p>
-      <a href="https://github.com/sr2000003/weather-forecast" target="_blank" rel="noopener noreferrer">View on GitHub</a>
-    </article>
+    <!-- PROJECTS -->
+    <section id="projects">
+      <div data-reveal="down">
+        <p class="eyebrow">My Work</p>
+        <h2 class="title">Real-World Projects</h2>
+      </div>
+      <div class="carousel-wrap" data-reveal="up">
+        <div class="car-btns">
+          <button data-target="projects-carousel" data-dir="-1" aria-label="Previous">←</button>
+          <button data-target="projects-carousel" data-dir="1" aria-label="Next">→</button>
+        </div>
+        <div class="carousel-container" id="projects-carousel">
+          <article class="card glow tilt">
+            <h3>Canteen Ticket Digitization</h3>
+            <p>Built a full-stack React/Vite/Firebase app with OTP login and real-time Firestore admin panel to replace manual spreadsheet workflows.</p>
+            <a class="link" href="https://github.com/sr2000003/canteen-app" target="_blank" rel="noopener noreferrer">View on GitHub</a>
+            <div class="glare"></div>
+          </article>
 
-    <article class="card">
-      <h3>Interactive Number Guessing</h3>
-      <p>A logic-based algorithmic game demonstrating DOM manipulation, state management, and user input validation.</p>
-      <a href="https://github.com/sr2000003/number-guessing" target="_blank" rel="noopener noreferrer">View on GitHub</a>
-    </article>
-  </div>
-</section>
+          <article class="card glow tilt">
+            <h3>Inventory Centralization &amp; Challan</h3>
+            <p>Automated document creation using Google Forms and WhatsApp APIs while centralizing inventory on the World Fashion Exchange ERP.</p>
+            <a class="link" href="https://github.com/sr2000003/Challan_Automation" target="_blank" rel="noopener noreferrer">View on GitHub</a>
+            <div class="glare"></div>
+          </article>
 
-<section id="certifications">
-  <h2>Certifications</h2>
-  <div class="carousel-container" id="cert-carousel">
-    <article class="card">
-      <h3>AWS Foundations: Getting Started</h3>
-      <p><strong>Issuer:</strong> AWS Training & Certification</p>
-      <!-- OPTIMIZATION: Added aria-label so screen readers don't just read "View Certificate" four times in a row -->
-      <a href="https://drive.google.com/file/d/1DrDafmAe2ZAFrvT4f3Y_g0E_7nn47x3W/view?usp=sharing" target="_blank" rel="noopener noreferrer" aria-label="View AWS Foundations Certificate">View Certificate</a>
-    </article>
-    
-    <article class="card">
-      <h3>Claude: Building with the Claude API</h3>
-      <p><strong>Issuer:</strong> Anthropic</p>
-      <a href="https://drive.google.com/file/d/1YxcVgRYwS4OIQVvo_f583DA7vE7FaFGF/view?usp=sharing" target="_blank" rel="noopener noreferrer" aria-label="View Claude API Certificate">View Certificate</a>
-    </article>
-    
-    <article class="card">
-      <h3>Claude: Building Effective Human-Agent Teams</h3>
-      <p><strong>Issuer:</strong> Anthropic</p>
-      <a href="https://drive.google.com/file/d/13AeJy36-rZ0GR22BODfz1FHovsPig9VG/view?usp=sharing" target="_blank" rel="noopener noreferrer" aria-label="View Claude Human-Agent Teams Certificate">View Certificate</a>
-    </article>
-    
-    <article class="card">
-      <h3>Claude: Model Context Protocol</h3>
-      <p><strong>Issuer:</strong> Anthropic</p>
-      <a href="https://drive.google.com/file/d/1N19NjwDD6lRZYyLnHpsGXckmjH5wzfvz/view?usp=sharing" target="_blank" rel="noopener noreferrer" aria-label="View Claude Model Context Protocol Certificate">View Certificate</a>
-    </article>
-  </div>
-</section>
+          <article class="card glow tilt">
+            <h3>Weather Forecast Dashboard</h3>
+            <p>A dynamic web application providing real-time weather tracking and forecasting utilizing asynchronous API integrations.</p>
+            <a class="link" href="https://github.com/sr2000003/weather-forecast" target="_blank" rel="noopener noreferrer">View on GitHub</a>
+            <div class="glare"></div>
+          </article>
 
-<section id="contact">
-  <h2>Contact</h2>
-  <p>Email: <a href="mailto:sr2000003@gmail.com">sr2000003@gmail.com</a></p>
-  <p>GitHub: <a href="https://github.com/sr2000003" target="_blank" rel="noopener noreferrer">github.com/sr2000003</a></p>
-  <p>LinkedIn: <a href="https://linkedin.com/in/siddharthrana03" target="_blank" rel="noopener noreferrer">linkedin.com/in/siddharthrana03</a></p>
-  <p>Phone: <a href="tel:+917740082120">+91 77400 82120</a></p>
-</section>
+          <article class="card glow tilt">
+            <h3>Interactive Number Guessing</h3>
+            <p>A logic-based algorithmic game demonstrating DOM manipulation, state management, and user input validation.</p>
+            <a class="link" href="https://github.com/sr2000003/number-guessing" target="_blank" rel="noopener noreferrer">View on GitHub</a>
+            <div class="glare"></div>
+          </article>
+        </div>
+      </div>
+    </section>
+    <!-- FUNCTION: swipeable/auto-scrolling carousel of your four projects, each linking to its GitHub repo. -->
 
-<footer>
-  <p>© 2026 Siddharth Rana | Built with clean code.</p>
-</footer>
+    <!-- CERTIFICATIONS -->
+    <section id="certifications">
+      <div data-reveal="down">
+        <p class="eyebrow">Credentials</p>
+        <h2 class="title">Certifications</h2>
+      </div>
+      <div class="carousel-wrap" data-reveal="up">
+        <div class="car-btns">
+          <button data-target="cert-carousel" data-dir="-1" aria-label="Previous">←</button>
+          <button data-target="cert-carousel" data-dir="1" aria-label="Next">→</button>
+        </div>
+        <div class="carousel-container" id="cert-carousel">
+          <article class="card glow tilt">
+            <h3>AWS Foundations: Getting Started</h3>
+            <p><strong>Issuer:</strong> AWS Training &amp; Certification</p>
+            <a class="link" href="https://drive.google.com/file/d/1DrDafmAe2ZAFrvT4f3Y_g0E_7nn47x3W/view?usp=sharing" target="_blank" rel="noopener noreferrer" aria-label="View AWS Foundations Certificate">View Certificate</a>
+            <div class="glare"></div>
+          </article>
 
-<script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const carousels = document.querySelectorAll('.carousel-container');
+          <article class="card glow tilt">
+            <h3>Claude: Building with the Claude API</h3>
+            <p><strong>Issuer:</strong> Anthropic</p>
+            <a class="link" href="https://drive.google.com/file/d/1YxcVgRYwS4OIQVvo_f583DA7vE7FaFGF/view?usp=sharing" target="_blank" rel="noopener noreferrer" aria-label="View Claude API Certificate">View Certificate</a>
+            <div class="glare"></div>
+          </article>
 
-    carousels.forEach(carousel => {
-      let autoScrollTimer;
+          <article class="card glow tilt">
+            <h3>Claude: Building Effective Human-Agent Teams</h3>
+            <p><strong>Issuer:</strong> Anthropic</p>
+            <a class="link" href="https://drive.google.com/file/d/13AeJy36-rZ0GR22BODfz1FHovsPig9VG/view?usp=sharing" target="_blank" rel="noopener noreferrer" aria-label="View Claude Human-Agent Teams Certificate">View Certificate</a>
+            <div class="glare"></div>
+          </article>
 
-      const startAutoScroll = () => {
-        clearInterval(autoScrollTimer);
-        autoScrollTimer = setInterval(() => {
-          const card = carousel.querySelector('.card');
-          if (!card) return; 
-          const cardWidth = card.offsetWidth + 24; 
-          
-          if (carousel.scrollLeft + carousel.clientWidth >= carousel.scrollWidth - 10) {
-            carousel.scrollTo({ left: 0, behavior: 'smooth' }); 
-          } else {
-            carousel.scrollBy({ left: cardWidth, behavior: 'smooth' }); 
-          }
-        }, 3000); 
+          <article class="card glow tilt">
+            <h3>Claude: Model Context Protocol</h3>
+            <p><strong>Issuer:</strong> Anthropic</p>
+            <a class="link" href="https://drive.google.com/file/d/1N19NjwDD6lRZYyLnHpsGXckmjH5wzfvz/view?usp=sharing" target="_blank" rel="noopener noreferrer" aria-label="View Claude Model Context Protocol Certificate">View Certificate</a>
+            <div class="glare"></div>
+          </article>
+        </div>
+      </div>
+    </section>
+    <!-- FUNCTION: carousel of your four certificates, each linking to the PDF on Google Drive. -->
+
+    <!-- CONTACT -->
+    <section id="contact">
+      <div data-reveal="down">
+        <p class="eyebrow">Get in touch</p>
+        <h2 class="title">Contact</h2>
+      </div>
+      <div class="glow contact-card" data-reveal="left">
+        <p><span>Email</span> <a href="mailto:sr2000003@gmail.com">sr2000003@gmail.com</a></p>
+        <p><span>GitHub</span> <a href="https://github.com/sr2000003" target="_blank" rel="noopener noreferrer">github.com/sr2000003</a></p>
+        <p><span>LinkedIn</span> <a href="https://linkedin.com/in/siddharthrana03" target="_blank" rel="noopener noreferrer">linkedin.com/in/siddharthrana03</a></p>
+        <p><span>Phone</span> <a href="tel:+917740082120">+91 77400 82120</a></p>
+        <!-- RESUME: replace "resume.pdf" with your real file later -->
+        <a class="btn btn-fill" href="resume.pdf" download="SiddharthRana_resume.pdf">
+          Download Resume
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M21 16v6H3v"/></svg>
+        </a>
+      </div>
+    </section>
+    <!-- FUNCTION: all your contact links (email, GitHub, LinkedIn, phone) plus a third Download Resume button. -->
+  </main>
+
+  <footer>
+    <p>© 2026 Siddharth Rana | ॐ</p>
+  </footer>
+  <!-- FUNCTION: copyright line (kept exactly as you edited it). -->
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const canHover = window.matchMedia('(hover: hover)').matches;
+      /* FUNCTION: waits for the page to load, then records two user settings:
+         whether they prefer reduced motion, and whether their device has a real mouse. */
+
+      /* ---------- 1. Scroll reveal (staggered transitions) ---------- */
+      document.querySelectorAll('.skills').forEach(list => {
+        list.querySelectorAll('[data-reveal]').forEach((el, i) => el.style.setProperty('--d', (i * 0.06) + 's'));
+      });
+      const revealObs = new IntersectionObserver((entries) => {
+        entries.forEach(e => {
+          if (e.isIntersecting) { e.target.classList.add('in'); revealObs.unobserve(e.target); }
+        });
+      }, { threshold: 0.15 });
+      document.querySelectorAll('[data-reveal]').forEach(el => revealObs.observe(el));
+      /* FUNCTION: gives each skill chip a slightly later delay (stagger), then watches every
+         [data-reveal] element and adds the ".in" class when it becomes visible, triggering its slide/fade-in. */
+
+      /* ---------- 2. Navbar: scroll-spy + sliding underline ---------- */
+      const links = [...document.querySelectorAll('#navLinks a')];
+      const indicator = document.getElementById('navIndicator');
+      const moveIndicator = (a) => {
+        if (!a) { indicator.style.width = '0'; return; }
+        indicator.style.width = a.offsetWidth + 'px';
+        indicator.style.transform = `translateX(${a.offsetLeft}px)`;
       };
+      const setActive = (id) => {
+        let target = null;
+        links.forEach(a => {
+          const on = a.getAttribute('href') === '#' + id;
+          a.classList.toggle('active', on);
+          if (on) target = a;
+        });
+        moveIndicator(target);
+      };
+      const spyObs = new IntersectionObserver((entries) => {
+        entries.forEach(e => { if (e.isIntersecting) setActive(e.target.id); });
+      }, { rootMargin: '-45% 0px -50% 0px' });
+      document.querySelectorAll('section[id]').forEach(s => spyObs.observe(s));
+      window.addEventListener('resize', () => moveIndicator(links.find(a => a.classList.contains('active'))));
+      /* FUNCTION: "scroll-spy" — detects which section is in the middle of the screen, highlights its nav link
+         and slides the gradient underline beneath it. Recalculates on window resize. */
 
-      const stopAutoScroll = () => clearInterval(autoScrollTimer);
+      const menuBtn = document.getElementById('menuBtn');
+      const mobileMenu = document.getElementById('mobileMenu');
+      menuBtn.addEventListener('click', () => mobileMenu.classList.toggle('open'));
+      mobileMenu.querySelectorAll('a').forEach(a => a.addEventListener('click', () => mobileMenu.classList.remove('open')));
+      /* FUNCTION: opens/closes the mobile dropdown with the ☰ button, and closes it after a link is tapped. */
 
-      carousel.addEventListener('mouseenter', stopAutoScroll);
-      carousel.addEventListener('mouseleave', startAutoScroll);
-      carousel.addEventListener('touchstart', stopAutoScroll, { passive: true }); 
-      carousel.addEventListener('touchend', startAutoScroll);
+      /* ---------- 3. Scroll progress bar ---------- */
+      const bar = document.getElementById('progress');
+      const onScroll = () => {
+        const h = document.documentElement.scrollHeight - innerHeight;
+        bar.style.width = (h > 0 ? (scrollY / h) * 100 : 0) + '%';
+      };
+      addEventListener('scroll', onScroll, { passive: true });
+      onScroll();
+      /* FUNCTION: sets the top bar's width to the percentage of the page you've scrolled. */
 
-      startAutoScroll();
+      /* ---------- 4. Pointer glow + 3D tilt with glare ---------- */
+      document.querySelectorAll('.glow').forEach(el => {
+        el.addEventListener('pointermove', (e) => {
+          const r = el.getBoundingClientRect();
+          el.style.setProperty('--mx', (e.clientX - r.left) + 'px');
+          el.style.setProperty('--my', (e.clientY - r.top) + 'px');
+        });
+      });
+      /* FUNCTION: stores the mouse position inside each card so the CSS light follows the cursor. */
+
+      if (!reduceMotion) {
+        document.querySelectorAll('.tilt').forEach(el => {
+          el.addEventListener('pointermove', (e) => {
+            if (e.pointerType === 'touch') return;
+            const r = el.getBoundingClientRect();
+            const px = (e.clientX - r.left) / r.width;
+            const py = (e.clientY - r.top) / r.height;
+            el.style.transform = `perspective(1000px) rotateX(${(0.5 - py) * 10}deg) rotateY(${(px - 0.5) * 10}deg) scale3d(1.02,1.02,1.02)`;
+            el.style.setProperty('--gx', (px * 100) + '%');
+            el.style.setProperty('--gy', (py * 100) + '%');
+          });
+          el.addEventListener('pointerleave', () => {
+            el.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale3d(1,1,1)';
+          });
+        });
+      }
+      /* FUNCTION: tilts cards toward the mouse in 3D and moves the glare; resets smoothly when the mouse leaves. */
+
+      /* ---------- 5. Typed code card in hero ---------- */
+      const lines = [
+        '<span class="k">const</span> <span class="w">developer</span> <span class="k">=</span> <span class="g">{</span>',
+        '  <span class="w">name:</span> <span class="g">\'</span><span class="s">Siddharth Rana</span><span class="g">\',</span>',
+        '  <span class="w">role:</span> <span class="g">\'</span><span class="s">Full Stack Developer</span><span class="g">\',</span>',
+        '  <span class="w">skills:</span> <span class="g">[</span><span class="s">\'React\'</span><span class="g">,</span> <span class="s">\'Vite\'</span><span class="g">,</span> <span class="s">\'Node.js\'</span><span class="g">,</span> <span class="s">\'Firebase\'</span><span class="g">,</span> <span class="s">\'Python\'</span><span class="g">,</span> <span class="s">\'SQL\'</span><span class="g">],</span>',
+        '  <span class="w">problemSolver:</span> <span class="o">true</span><span class="g">,</span>',
+        '  <span class="w">quickLearner:</span> <span class="o">true</span><span class="g">,</span>',
+        '  <span class="gr">hireable:</span> <span class="o">function</span><span class="g">() {</span>',
+        '    <span class="o">return</span> <span class="g">(</span>',
+        '      <span class="c">this.</span><span class="w">problemSolver</span> <span class="s">&amp;&amp;</span>',
+        '      <span class="c">this.</span><span class="w">skills.length</span> <span class="s">&gt;=</span> <span class="o">5</span>',
+        '    <span class="g">);</span>',
+        '  <span class="g">}</span>',
+        '<span class="g">};</span>'
+      ];
+      const typed = document.getElementById('typed');
+      if (reduceMotion) {
+        typed.innerHTML = lines.join('\n');
+      } else {
+        let i = 0;
+        const typeLine = () => {
+          if (i >= lines.length) return;
+          typed.innerHTML += (i ? '\n' : '') + lines[i++];
+          setTimeout(typeLine, 260);
+        };
+        setTimeout(typeLine, 700);
+      }
+      /* FUNCTION: prints the colour-coded code lines into the hero card one by one (all at once if reduced motion is on). */
+
+      /* ---------- 6. Rotating tagline ---------- */
+      const roleEl = document.getElementById('roleRotator');
+      const roles = ['React & Firebase Specialist', 'Problem Solver', 'Full Stack Developer'];
+      let roleIdx = 0;
+      if (!reduceMotion) {
+        setInterval(() => {
+          roleIdx = (roleIdx + 1) % roles.length;
+          roleEl.classList.remove('swap');
+          void roleEl.offsetWidth;            // restarts the CSS animation
+          roleEl.textContent = roles[roleIdx];
+          roleEl.classList.add('swap');
+        }, 2800);
+      }
+      /* FUNCTION: every ~3 seconds swaps the hero tagline to the next role with a small fade-up animation. */
+
+      /* ---------- 7. Carousels (auto-scroll + arrows) ---------- */
+      document.querySelectorAll('.carousel-container').forEach(carousel => {
+        let timer;
+        const step = () => {
+          const card = carousel.querySelector('.card');
+          return card ? card.offsetWidth + 24 : 300;
+        };
+        const start = () => {
+          clearInterval(timer);
+          timer = setInterval(() => {
+            if (carousel.scrollLeft + carousel.clientWidth >= carousel.scrollWidth - 10) {
+              carousel.scrollTo({ left: 0, behavior: 'smooth' });
+            } else {
+              carousel.scrollBy({ left: step(), behavior: 'smooth' });
+            }
+          }, 3500);
+        };
+        const stop = () => clearInterval(timer);
+        carousel.addEventListener('mouseenter', stop);
+        carousel.addEventListener('mouseleave', start);
+        carousel.addEventListener('touchstart', stop, { passive: true });
+        carousel.addEventListener('touchend', start);
+        start();
+      });
+      /* FUNCTION: each carousel moves forward by one card every 3.5s, loops back to the start at the end,
+         and pauses while you hover or touch it. */
+
+      document.querySelectorAll('.car-btns button').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const c = document.getElementById(btn.dataset.target);
+          const card = c.querySelector('.card');
+          c.scrollBy({ left: Number(btn.dataset.dir) * (card.offsetWidth + 24), behavior: 'smooth' });
+        });
+      });
+      /* FUNCTION: makes the ← / → buttons scroll their carousel by exactly one card. */
+
+      /* ---------- 8. Cursor spotlight ---------- */
+      const spot = document.getElementById('spotlight');
+      if (canHover && !reduceMotion) {
+        let tx = innerWidth / 2, ty = innerHeight / 2, cx = tx, cy = ty;
+        addEventListener('pointermove', e => { tx = e.clientX; ty = e.clientY; });
+        const follow = () => {
+          cx += (tx - cx) * 0.12;
+          cy += (ty - cy) * 0.12;
+          spot.style.transform = `translate(${cx}px, ${cy}px)`;
+          requestAnimationFrame(follow);
+        };
+        follow();
+      }
+      /* FUNCTION: moves the soft blue spotlight toward the mouse with easing, so it trails the cursor smoothly. */
+
+      /* ---------- 9. Magnetic buttons + click ripple ---------- */
+      if (canHover && !reduceMotion) {
+        document.querySelectorAll('.btn, .social-row a, .car-btns button').forEach(el => {
+          el.addEventListener('pointermove', (e) => {
+            const r = el.getBoundingClientRect();
+            const dx = e.clientX - (r.left + r.width / 2);
+            const dy = e.clientY - (r.top + r.height / 2);
+            el.style.transform = `translate(${dx * 0.18}px, ${dy * 0.28}px)`;
+          });
+          el.addEventListener('pointerleave', () => { el.style.transform = ''; });
+        });
+      }
+      /* FUNCTION: buttons gently "pull" toward the cursor while hovered and spring back when you leave. */
+
+      document.querySelectorAll('.btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const r = btn.getBoundingClientRect();
+          const size = Math.max(r.width, r.height);
+          const span = document.createElement('span');
+          span.className = 'ripple';
+          span.style.width = span.style.height = size + 'px';
+          span.style.left = (e.clientX - r.left - size / 2) + 'px';
+          span.style.top = (e.clientY - r.top - size / 2) + 'px';
+          btn.appendChild(span);
+          setTimeout(() => span.remove(), 650);
+        });
+      });
+      /* FUNCTION: on click, creates a expanding circle at the click point (Material-style ripple) and removes it afterwards. */
+
+      /* ---------- 10. Lightweight particle background ---------- */
+      const canvas = document.getElementById('bg-canvas');
+      const ctx = canvas.getContext('2d');
+      let W, H, pts = [];
+      const mouse = { x: -999, y: -999 };
+      const resize = () => {
+        W = canvas.width = innerWidth;
+        H = canvas.height = innerHeight;
+        const n = Math.min(80, Math.floor((W * H) / 20000));
+        pts = Array.from({ length: n }, () => ({
+          x: Math.random() * W, y: Math.random() * H,
+          vx: (Math.random() - 0.5) * 0.3, vy: (Math.random() - 0.5) * 0.3,
+          r: Math.random() * 1.5 + 0.5,
+          c: Math.random() > 0.5 ? '59,130,246' : '20,184,166'
+        }));
+      };
+      resize();
+      addEventListener('resize', resize);
+      addEventListener('pointermove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+      /* FUNCTION: sizes the canvas to the window and creates a number of blue/teal particles
+         proportional to the screen area; also tracks the mouse position. */
+
+      const draw = () => {
+        ctx.clearRect(0, 0, W, H);
+        for (let i = 0; i < pts.length; i++) {
+          const p = pts[i];
+          p.x += p.vx; p.y += p.vy;
+          if (p.x < 0 || p.x > W) p.vx *= -1;
+          if (p.y < 0 || p.y > H) p.vy *= -1;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(${p.c},0.7)`;
+          ctx.fill();
+          for (let j = i + 1; j < pts.length; j++) {
+            const q = pts[j];
+            const d = Math.hypot(p.x - q.x, p.y - q.y);
+            if (d < 120) {
+              ctx.strokeStyle = `rgba(59,130,246,${(1 - d / 120) * 0.22})`;
+              ctx.lineWidth = 0.6;
+              ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke();
+            }
+          }
+          const md = Math.hypot(p.x - mouse.x, p.y - mouse.y);
+          if (md < 150) {
+            ctx.strokeStyle = `rgba(20,184,166,${(1 - md / 150) * 0.45})`;
+            ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(mouse.x, mouse.y); ctx.stroke();
+          }
+        }
+        requestAnimationFrame(draw);
+      };
+      if (!reduceMotion) draw();
+      /* FUNCTION: animation loop — moves each particle, bounces it off screen edges, draws it, connects nearby
+         particles with faint lines, and links particles to the cursor when it's close. */
     });
-  });
-</script>
+  </script>
 </body>
 </html>
