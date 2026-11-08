@@ -358,7 +358,6 @@
        8. RESPONSIVE + ACCESSIBILITY
        ========================================================================== */
     @media (max-width: 820px) {
-      .nav-links, .nav-resume { display: none; }
       .menu-btn { display: block; }
       .hero-grid { grid-template-columns: 1fr; }
       .hero-grid > .code-wrap { order: -1; }
@@ -445,6 +444,72 @@
 }
 #toast.show { opacity: 1; transform: translate(-50%, 0); }
 /* FUNCTION: a small pill-shaped message that slides up from the bottom of the screen and fades out again. */
+  /* ===== MENU BUTTON → CROSS + STACKED DROPDOWN ===== */
+
+.menu-btn { position: relative; width: 44px; height: 44px; padding: 0; font-size: 0; }
+.menu-btn .bar {
+  position: absolute; left: 11px; right: 11px; height: 2px; border-radius: 2px; background: #fff;
+  transition: transform 0.35s cubic-bezier(0.65, 0, 0.35, 1), top 0.35s cubic-bezier(0.65, 0, 0.35, 1), opacity 0.2s ease;
+}
+.menu-btn .bar:nth-child(1) { top: 14px; }
+.menu-btn .bar:nth-child(2) { top: 21px; }
+.menu-btn .bar:nth-child(3) { top: 28px; }
+.menu-btn.open .bar:nth-child(1) { top: 21px; transform: rotate(45deg); }
+.menu-btn.open .bar:nth-child(2) { opacity: 0; transform: scaleX(0); }
+.menu-btn.open .bar:nth-child(3) { top: 21px; transform: rotate(-45deg); }
+/* FUNCTION: three bars that slide together and rotate into an "X" when the menu opens, in the same spot as the ☰. */
+
+.mobile-menu {
+  display: flex; flex-direction: column; gap: 4px;
+  max-height: 0; overflow: hidden; opacity: 0; visibility: hidden;
+  margin: 0 16px; padding: 0 12px; border: 0; animation: none;
+  transition: max-height 0.45s ease, opacity 0.3s ease, padding 0.3s ease, margin 0.3s ease, visibility 0s linear 0.45s;
+}
+.mobile-menu.open {
+  max-height: 460px; opacity: 1; visibility: visible;
+  margin: 0 16px 12px; padding: 12px; border: 1px solid var(--border); animation: none;
+  transition-delay: 0s;
+}
+@media (min-width: 821px) { .mobile-menu { display: none; } }
+/* FUNCTION: the dropdown is always present but collapsed (zero height, invisible). Opening grows it smoothly
+   and closing shrinks it, instead of popping in and out. It stays hidden on desktop. */
+
+.mobile-menu a {
+  opacity: 0; transform: translateX(-24px);
+  transition: opacity 0.35s ease, transform 0.35s ease, color 0.3s, background 0.3s;
+}
+.mobile-menu.open a {
+  opacity: 1; transform: none;
+  transition-delay: calc(var(--i, 0) * 70ms + 120ms), calc(var(--i, 0) * 70ms + 120ms), 0s, 0s;
+}
+/* FUNCTION: each link starts faded and shifted left, then slides in one after another (70ms apart).
+   The delay applies only to the slide/fade, so hover colours still react instantly. */
+
+/* ===== LOGO HIGHLIGHT ===== */
+.logo { position: relative; display: inline-block; }
+.logo::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -4px; height: 3px; border-radius: 2px;
+  background: var(--grad); box-shadow: 0 0 12px rgba(59, 130, 246, 0.7);
+  transform: scaleX(0); transform-origin: left;
+  transition: transform 0.4s cubic-bezier(0.65, 0, 0.35, 1);
+}
+.logo.active::after, .logo:hover::after { transform: scaleX(1); }
+.logo.pulse { animation: logoPulse 0.8s ease; }
+@keyframes logoPulse {
+  0%   { text-shadow: 0 0 0 rgba(59, 130, 246, 0); transform: scale(1); }
+  35%  { text-shadow: 0 0 18px rgba(59, 130, 246, 0.9), 0 0 36px rgba(20, 184, 166, 0.6); transform: scale(1.08); }
+  100% { text-shadow: 0 0 0 rgba(59, 130, 246, 0); transform: scale(1); }
+}
+/* FUNCTION: the logo gets the same gradient underline as the menu links. It shows while you're at the top
+   of the page and on hover, and clicking the logo triggers a short glow-and-grow pulse. */
+
+/* ===== LIGHTER BACKGROUND ON PHONES ===== */
+@media (max-width: 600px) {
+  .aurora i { filter: blur(60px); opacity: 0.12; animation: none; }
+  nav.main-navigation { backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+}
+/* FUNCTION: on phones the big background glows stop moving and use a smaller blur, and the navbar glass blur
+   is reduced. These are the most GPU-heavy effects, so scrolling stays smooth on mid-range phones. */
   </style>
 </head>
 
@@ -467,8 +532,11 @@
         <li><a href="#contact">Contact</a></li>
         <li class="nav-indicator" id="navIndicator" aria-hidden="true"></li>
       </ul>
-      <!-- RESUME: replace "resume.pdf" with your real file later -->
-      <button class="menu-btn" id="menuBtn" aria-label="Toggle menu">☰</button>
+      
+            <button class="menu-btn" id="menuBtn" aria-label="Toggle menu" aria-expanded="false" aria-controls="mobileMenu">
+        <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+      </button>
+      <!-- FUNCTION: menu button built from three bars instead of a ☰ character, so CSS can morph the bars into a ✕. -->
     </div>
     <div class="mobile-menu" id="mobileMenu">
       <a href="#about">About</a>
@@ -476,7 +544,7 @@
       <a href="#projects">Projects</a>
       <a href="#certifications">Certifications</a>
       <a href="#contact">Contact</a>
-      <a href="resume.pdf" download="SiddharthRana_resume.pdf">Download Resume</a>
+      <a href="SiddharthRana_resume.pdf" download="SiddharthRana_resume.pdf">Download Resume</a>
     </div>
   </nav>
   <!-- FUNCTION: top navigation. Desktop shows links + a Resume button; phones show the ☰ dropdown. Link clicks jump to sections. -->
@@ -511,7 +579,7 @@
         <!-- FUNCTION: social pills. Each now has an icon (GitHub, LinkedIn, Instagram, mail) before its label. Instagram links to instagram.com/sr2000003. -->
         <div class="btn-row">
           <!-- RESUME: replace "resume.pdf" with your real file later -->
-          <a class="btn btn-fill" href="resume.pdf" download="SiddharthRana_resume.pdf">
+          <a class="btn btn-fill" href="SiddharthRana_resume.pdf" download="SiddharthRana_resume.pdf">
             Download Resume
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>
           </a>
@@ -676,7 +744,7 @@
         <p><span>LinkedIn</span> <a href="https://linkedin.com/in/siddharthrana03" target="_blank" rel="noopener noreferrer">linkedin.com/in/siddharthrana03</a></p>
         <p><span>Phone</span> <a href="tel:+917740082120">+91 77400 82120</a></p>
         <!-- RESUME: replace "resume.pdf" with your real file later -->
-        <a class="btn btn-fill" href="resume.pdf" download="SiddharthRana_resume.pdf">
+        <a class="btn btn-fill" href="SiddharthRana_resume.pdf" download="SiddharthRana_resume.pdf">
           Download Resume
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M21 16v6H3v"/></svg>
         </a>
@@ -718,7 +786,9 @@
         indicator.style.width = a.offsetWidth + 'px';
         indicator.style.transform = `translateX(${a.offsetLeft}px)`;
       };
+      const logo = document.querySelector('.logo');
       const setActive = (id) => {
+        logo.classList.toggle('active', id === 'home');
         let target = null;
         links.forEach(a => {
           const on = a.getAttribute('href') === '#' + id;
@@ -730,16 +800,43 @@
       const spyObs = new IntersectionObserver((entries) => {
         entries.forEach(e => { if (e.isIntersecting) setActive(e.target.id); });
       }, { rootMargin: '-45% 0px -50% 0px' });
-      document.querySelectorAll('section[id]').forEach(s => spyObs.observe(s));
+            document.querySelectorAll('header[id], section[id]').forEach(s => spyObs.observe(s));
       window.addEventListener('resize', () => moveIndicator(links.find(a => a.classList.contains('active'))));
       /* FUNCTION: "scroll-spy" — detects which section is in the middle of the screen, highlights its nav link
          and slides the gradient underline beneath it. Recalculates on window resize. */
 
       const menuBtn = document.getElementById('menuBtn');
       const mobileMenu = document.getElementById('mobileMenu');
-      menuBtn.addEventListener('click', () => mobileMenu.classList.toggle('open'));
-      mobileMenu.querySelectorAll('a').forEach(a => a.addEventListener('click', () => mobileMenu.classList.remove('open')));
-      /* FUNCTION: opens/closes the mobile dropdown with the ☰ button, and closes it after a link is tapped. */
+      const navEl = document.querySelector('nav.main-navigation');
+
+      const setMenu = open => {
+        mobileMenu.classList.toggle('open', open);
+        menuBtn.classList.toggle('open', open);
+        menuBtn.setAttribute('aria-expanded', String(open));
+      };
+      /* FUNCTION: one function that opens or closes the menu and keeps the ☰/✕ button and accessibility state in sync. */
+
+      menuBtn.addEventListener('click', () => setMenu(!mobileMenu.classList.contains('open')));
+      mobileMenu.querySelectorAll('a').forEach((a, i) => {
+        a.style.setProperty('--i', i);                       // position in the stack, used for the staggered slide-in
+        a.addEventListener('click', () => setMenu(false));   // tapping a link closes the menu
+      });
+      /* FUNCTION: the button toggles the menu; each link gets its stack position for the stagger delay. */
+
+      document.addEventListener('click', e => { if (!navEl.contains(e.target)) setMenu(false); });
+      addEventListener('keydown', e => { if (e.key === 'Escape') setMenu(false); });
+      addEventListener('resize', () => { if (innerWidth > 820) setMenu(false); });
+      /* FUNCTION: extra ways to close the menu: tap outside the navbar, press Escape, or rotate/resize to desktop width. */
+
+      logo.addEventListener('click', () => {
+        logo.classList.remove('pulse');
+        void logo.offsetWidth;                  // restarts the animation if tapped repeatedly
+        logo.classList.add('pulse');
+        setMenu(false);
+      });
+      logo.addEventListener('animationend', () => logo.classList.remove('pulse'));
+      /* FUNCTION: tapping the logo plays the glow pulse, closes the menu if it was open, and still scrolls to the top via its link. */
+
 
       /* ---------- 3. Scroll progress bar ---------- */
       const bar = document.getElementById('progress');
@@ -1072,7 +1169,7 @@
          particles with faint lines, and links particles to the cursor when it's close. */
     });
   </script>
-  
+
   <div id="toast" role="status" aria-live="polite"></div>
   <!-- FUNCTION: empty message box that JS fills with text, e.g. "Resume coming soon". -->
 </body>
