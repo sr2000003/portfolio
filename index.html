@@ -372,6 +372,34 @@
       h2.title::after { width: 70px; }
     }
     /* FUNCTION: rearranges the layout for small screens, and switches animations off for users who prefer reduced motion. */
+    /* ===== TOUCH EFFECTS (add-on) ===== */
+
+/* Spotlight on touch: shown only while a finger is down */
+@media (hover: none) {
+  #spotlight {
+    display: block;                               /* overrides the earlier "display:none" for touch devices */
+    width: 440px; height: 440px; margin: -220px 0 0 -220px;
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.22), transparent 65%);
+    opacity: 0; transition: opacity 0.35s ease;   /* hidden until touched */
+  }
+  #spotlight.on { opacity: 1; }                   /* JS adds ".on" while a finger is on the screen */
+}
+/* FUNCTION: re-enables the spotlight on phones as a soft glow that fades in under your finger and fades out when you lift it. */
+
+/* Touch-press look for glowing/tilting cards (same look as hover on desktop) */
+.glow.touching { border-color: var(--border-strong); box-shadow: 0 18px 44px -14px rgba(59, 130, 246, 0.45); }
+.glow.touching::before { opacity: 1; }
+.tilt.touching .glare { opacity: 1; }
+/* FUNCTION: phones have no real "hover", so JS adds ".touching" while a card is pressed and these rules light it up. */
+
+/* Let more elements show ripples without the ripple spilling outside them */
+.skills li, .social-row a, .car-btns button, .mobile-menu a { position: relative; overflow: hidden; }
+.ripple.soft { background: rgba(59, 130, 246, 0.28); animation-duration: 0.8s; }
+/* FUNCTION: skill chips, social pills, arrow buttons and mobile-menu links can now hold a ripple; "soft" is a gentler blue ripple used on cards and chips (buttons keep the white one). */
+
+/* Elastic spring-back for magnetic buttons */
+.mag-release { transition: transform 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) !important; }
+/* FUNCTION: when a pulled button is released, it bounces back into place instead of snapping. */
   </style>
 </head>
 
@@ -770,49 +798,137 @@
       /* FUNCTION: makes the ← / → buttons scroll their carousel by exactly one card. */
 
       /* ---------- 8. Cursor spotlight ---------- */
+            /* ---------- 8. Spotlight (mouse + finger) ---------- */
       const spot = document.getElementById('spotlight');
-      if (canHover && !reduceMotion) {
+      if (!reduceMotion) {
         let tx = innerWidth / 2, ty = innerHeight / 2, cx = tx, cy = ty;
-        addEventListener('pointermove', e => { tx = e.clientX; ty = e.clientY; });
+
+        addEventListener('pointermove', e => {
+          if (e.pointerType !== 'touch') { tx = e.clientX; ty = e.clientY; }
+        });
+        /* FUNCTION: mouse users: the spotlight's target position follows the cursor. */
+
+        addEventListener('touchstart', e => {
+          const t = e.touches[0]; if (!t) return;
+          cx = tx = t.clientX; cy = ty = t.clientY;   // jump straight to the finger
+          spot.classList.add('on');
+        }, { passive: true });
+        addEventListener('touchmove', e => {
+          const t = e.touches[0]; if (t) { tx = t.clientX; ty = t.clientY; }
+        }, { passive: true });
+        const spotOff = e => { if (e.touches.length === 0) spot.classList.remove('on'); };
+        addEventListener('touchend', spotOff, { passive: true });
+        addEventListener('touchcancel', spotOff, { passive: true });
+        /* FUNCTION: touch users: the glow appears under the finger on contact, follows it (even while scrolling)
+           and fades out when the last finger lifts. */
+
         const follow = () => {
-          cx += (tx - cx) * 0.12;
-          cy += (ty - cy) * 0.12;
+          cx += (tx - cx) * 0.14;
+          cy += (ty - cy) * 0.14;
           spot.style.transform = `translate(${cx}px, ${cy}px)`;
           requestAnimationFrame(follow);
         };
         follow();
+        /* FUNCTION: animation loop that eases the spotlight toward its target so it trails smoothly. */
       }
-      /* FUNCTION: moves the soft blue spotlight toward the mouse with easing, so it trails the cursor smoothly. */
 
-      /* ---------- 9. Magnetic buttons + click ripple ---------- */
-      if (canHover && !reduceMotion) {
-        document.querySelectorAll('.btn, .social-row a, .car-btns button').forEach(el => {
-          el.addEventListener('pointermove', (e) => {
-            const r = el.getBoundingClientRect();
-            const dx = e.clientX - (r.left + r.width / 2);
-            const dy = e.clientY - (r.top + r.height / 2);
-            el.style.transform = `translate(${dx * 0.18}px, ${dy * 0.28}px)`;
-          });
-          el.addEventListener('pointerleave', () => { el.style.transform = ''; });
+      /* ---------- 9. Magnetic buttons (mouse + touch) ---------- */
+      const magnets = document.querySelectorAll('.btn, .social-row a, .car-btns button');
+      const clamp = (v, m) => Math.max(-m, Math.min(m, v));
+      const pull = (el, x, y, k, pressed) => {
+        const r = el.getBoundingClientRect();
+        const dx = x - (r.left + r.width / 2);
+        const dy = y - (r.top + r.height / 2);
+        el.style.transform = `translate(${clamp(dx * k, 14)}px, ${clamp(dy * k * 1.5, 14)}px)` + (pressed ? ' scale(0.96)' : '');
+      };
+      const release = el => {
+        el.classList.add('mag-release');
+        el.style.transform = '';
+        setTimeout(() => el.classList.remove('mag-release'), 560);
+      };
+      /* FUNCTION: helpers — "pull" nudges a button toward a point (limited to 14px so it never flies off),
+         "release" springs it back with the bounce defined in CSS. */
+
+      if (!reduceMotion) {
+        magnets.forEach(el => {
+          el.addEventListener('pointermove', e => { if (e.pointerType === 'mouse') pull(el, e.clientX, e.clientY, 0.18, false); });
+          el.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') release(el); });
+          /* FUNCTION: mouse: button leans toward the cursor and bounces back when the cursor leaves. */
+
+          const touchPull = e => { const t = e.touches[0]; if (t) pull(el, t.clientX, t.clientY, 0.3, true); };
+          el.addEventListener('touchstart', touchPull, { passive: true });
+          el.addEventListener('touchmove', touchPull, { passive: true });
+          el.addEventListener('touchend', () => release(el), { passive: true });
+          el.addEventListener('touchcancel', () => release(el), { passive: true });
+          /* FUNCTION: touch: while your finger is on a button it shrinks slightly and leans toward the finger;
+             lifting the finger makes it spring back. */
         });
       }
-      /* FUNCTION: buttons gently "pull" toward the cursor while hovered and spring back when you leave. */
 
-      document.querySelectorAll('.btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          const r = btn.getBoundingClientRect();
-          const size = Math.max(r.width, r.height);
-          const span = document.createElement('span');
-          span.className = 'ripple';
-          span.style.width = span.style.height = size + 'px';
-          span.style.left = (e.clientX - r.left - size / 2) + 'px';
-          span.style.top = (e.clientY - r.top - size / 2) + 'px';
-          btn.appendChild(span);
-          setTimeout(() => span.remove(), 650);
-        });
+      /* ---------- 9b. Ripples on tap / click ---------- */
+      const rippleTargets = '.btn, .social-row a, .car-btns button, .skills li, .card, .glow, .mobile-menu a';
+      document.addEventListener('pointerdown', e => {
+        if (reduceMotion) return;
+        const el = e.target.closest(rippleTargets);
+        if (!el) return;
+        const r = el.getBoundingClientRect();
+        const size = Math.min(Math.max(r.width, r.height), 240);
+        const span = document.createElement('span');
+        span.className = 'ripple' + (el.classList.contains('btn') ? '' : ' soft');
+        span.style.width = span.style.height = size + 'px';
+        span.style.left = (e.clientX - r.left - size / 2) + 'px';
+        span.style.top = (e.clientY - r.top - size / 2) + 'px';
+        el.appendChild(span);
+        setTimeout(() => span.remove(), 800);
       });
-      /* FUNCTION: on click, creates a expanding circle at the click point (Material-style ripple) and removes it afterwards. */
+      /* FUNCTION: the moment a finger or mouse presses a button, chip, card or menu link, a circle expands from
+         that exact point. One listener on the whole page handles every target, and it runs on press
+         (not after release) so it works instantly on touch screens. */
 
+      /* ---------- 9c. 3D tilt + glow on touch ---------- */
+      document.querySelectorAll('.glow').forEach(el => {
+        const isTilt = el.classList.contains('tilt');
+        let sx = 0, sy = 0, scrolling = false;
+
+        const apply = t => {
+          const r = el.getBoundingClientRect();
+          const px = Math.min(1, Math.max(0, (t.clientX - r.left) / r.width));
+          const py = Math.min(1, Math.max(0, (t.clientY - r.top) / r.height));
+          el.style.setProperty('--mx', (t.clientX - r.left) + 'px');
+          el.style.setProperty('--my', (t.clientY - r.top) + 'px');
+          if (isTilt) {
+            el.style.transform = `perspective(1000px) rotateX(${(0.5 - py) * 12}deg) rotateY(${(px - 0.5) * 12}deg) scale3d(0.98,0.98,0.98)`;
+            el.style.setProperty('--gx', (px * 100) + '%');
+            el.style.setProperty('--gy', (py * 100) + '%');
+          }
+        };
+        /* FUNCTION: works out where the finger is inside the card, then moves the light there and (for tilt cards)
+           rotates the card toward the finger with a small "pressed in" shrink. */
+
+        const reset = () => {
+          el.classList.remove('touching');
+          if (isTilt) el.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale3d(1,1,1)';
+        };
+        /* FUNCTION: returns the card to flat and turns its touch glow off. */
+
+        if (reduceMotion) return;
+        el.addEventListener('touchstart', e => {
+          const t = e.touches[0]; if (!t) return;
+          sx = t.clientX; sy = t.clientY; scrolling = false;
+          el.classList.add('touching');
+          apply(t);
+        }, { passive: true });
+        el.addEventListener('touchmove', e => {
+          const t = e.touches[0]; if (!t) return;
+          const dy = Math.abs(t.clientY - sy), dx = Math.abs(t.clientX - sx);
+          if (!scrolling && dy > 14 && dy > dx) { scrolling = true; reset(); }   // user is scrolling the page: stop tilting
+          if (!scrolling) apply(t);
+        }, { passive: true });
+        el.addEventListener('touchend', reset, { passive: true });
+        el.addEventListener('touchcancel', reset, { passive: true });
+        /* FUNCTION: press = card tilts and glows toward the finger; drag sideways = tilt follows; start scrolling
+           vertically = the effect backs off so it never fights page scrolling; lift = card settles flat. */
+      });
       /* ---------- 10. Lightweight particle background ---------- */
       const canvas = document.getElementById('bg-canvas');
       const ctx = canvas.getContext('2d');
