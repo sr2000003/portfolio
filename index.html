@@ -639,6 +639,12 @@
         will-change: auto;
       }
     }
+    /* Edge fade: hints that more carousel cards are off-screen */
+    .carousel-wrap::after {
+      content: ""; position: absolute; top: 0; right: 0; bottom: 0; width: 48px;
+      pointer-events: none;
+      background: linear-gradient(to right, transparent, var(--bg));
+    }
   </style>
 </head>
 
@@ -1058,6 +1064,7 @@
           return card ? card.offsetWidth + 24 : 300;
         };
         const start = () => {
+          if (reduceMotion) return;
           clearInterval(timer);
           timer = setInterval(() => {
             if (carousel.scrollLeft + carousel.clientWidth >= carousel.scrollWidth - 10) {
