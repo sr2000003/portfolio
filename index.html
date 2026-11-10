@@ -18,7 +18,7 @@
       --border: #1e2a47;        /* default thin borders */
       --border-strong: #2b3a5e; /* borders on hover / emphasis */
       --text: #e6eaf2;          /* primary text */
-      --muted: #94a3b8;         /* secondary text */
+      --muted: #b4c1d4;         /* secondary text: >= 4.5:1 on --bg and --surface */
       --accent: #3b82f6;        /* primary accent (professional blue) */
       --accent-2: #14b8a6;      /* secondary accent (teal) */
       --grad: linear-gradient(90deg, #3b82f6, #14b8a6); /* brand gradient */
@@ -218,7 +218,7 @@
       font-family: "Cascadia Code", Consolas, "Courier New", monospace;
       font-size: 0.92rem; line-height: 1.8; white-space: pre-wrap; min-height: 330px;
     }
-    .k { color: #60a5fa; } .w { color: #f1f5f9; } .g { color: #64748b; }
+    .k { color: #60a5fa; } .w { color: #f1f5f9; } .g { color: #94a3b8; }
     .s { color: #5eead4; } .o { color: #fbbf24; } .c { color: #38bdf8; } .gr { color: #34d399; }
     .caret { display: inline-block; width: 8px; height: 1em; background: var(--accent); vertical-align: -2px; animation: blink 1s steps(1) infinite; }
     @keyframes blink { 50% { opacity: 0; } }
@@ -227,9 +227,9 @@
     /* ==========================================================================
        6. SECTIONS & CARDS
        ========================================================================== */
-    section { max-width: 1100px; margin: 0 auto; padding: 90px 24px; }
+    section { max-width: 1100px; margin: 0 auto; padding: 88px 24px; }
     .eyebrow { font-size: 0.9rem; color: var(--accent-2); text-transform: uppercase; letter-spacing: 3px; font-weight: 600; }
-    h2.title { font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 800; color: #fff; line-height: 1.15; margin-bottom: 36px; }
+    h2.title { font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 800; color: #fff; line-height: 1.15; margin-bottom: 32px; }
     h2.title::after {
       content: ""; display: block; width: 0; height: 4px; margin-top: 10px;
       background: var(--grad); border-radius: 4px;
@@ -363,7 +363,7 @@
       .hero-grid > .code-wrap { order: -1; }
       .code-body { font-size: 0.78rem; min-height: 280px; }
       .carousel-container .card { min-width: 270px; }
-      section { padding: 70px 20px; }
+      section { padding: 72px 20px; }
     }
     @media (prefers-reduced-motion: reduce) {
       * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
@@ -534,6 +534,111 @@
 /* FUNCTION: on phones each card is 80% of the screen width (capped at 320px), so the next card peeks in at the
    edge to hint that you can swipe. Padding, heading and text are slightly smaller, and the minimum height is removed
    so short cards don't leave empty space. */
+
+    /* ==========================================================================
+       9. ACCESSIBILITY & INTERACTION REFINEMENTS
+       ========================================================================== */
+    :root {
+      --motion-feedback: 120ms;
+      --motion-card: 180ms;
+      --motion-ease: cubic-bezier(0.65, 0, 0.35, 1);
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 16px;
+      --space-4: 24px;
+    }
+
+    /* Interactive controls expose a consistent, comfortably sized hit area. */
+    .nav-links a {
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      transition: color var(--motion-feedback) ease, opacity var(--motion-feedback) ease;
+    }
+    .mobile-menu a,
+    .social-row a,
+    .btn,
+    .card a.link {
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+    }
+    .mobile-menu a { width: 100%; }
+    .skills li {
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      transition: transform var(--motion-feedback) var(--motion-ease),
+                  color var(--motion-feedback) ease,
+                  border-color var(--motion-feedback) ease,
+                  background var(--motion-feedback) ease,
+                  box-shadow var(--motion-feedback) ease,
+                  opacity var(--motion-feedback) ease;
+    }
+    .car-btns button {
+      width: 44px;
+      height: 44px;
+      min-width: 44px;
+      min-height: 44px;
+    }
+    .menu-btn { min-width: 44px; min-height: 44px; }
+
+    /* Immediate pressed-state feedback, without shifting surrounding layout. */
+    .nav-links a:active,
+    .mobile-menu a:active,
+    .social-row a:active,
+    .btn:active,
+    .skills li:active,
+    .card a.link:active,
+    .car-btns button:active {
+      opacity: 0.72;
+      transform: scale(0.98);
+      transition-duration: 90ms;
+    }
+    :where(a, button, [tabindex]):focus-visible {
+      outline: 2px solid var(--accent-2);
+      outline-offset: 3px;
+      border-radius: 6px;
+    }
+
+    /* Card motion is transform-only (GPU composited) and uses one shared easing curve. */
+    .tilt {
+      backface-visibility: hidden;
+      transform-style: preserve-3d;
+      transition: transform var(--motion-card) var(--motion-ease);
+      will-change: transform;
+    }
+    .glow {
+      transition: border-color var(--motion-card) var(--motion-ease),
+                  box-shadow var(--motion-card) var(--motion-ease);
+    }
+    .glow::before,
+    .tilt .glare {
+      transition: opacity var(--motion-card) var(--motion-ease);
+    }
+    .tilt .glare { will-change: opacity; }
+
+    /* Muted/code-secondary text remains readable on the darkest panel. */
+    .hero .tagline,
+    .contact-card p span { color: var(--muted); }
+    .code-body .g { color: #94a3b8; }
+
+    /* 4/8px vertical rhythm for the main content groups. */
+    .about-text p + p { margin-top: var(--space-3); }
+    .exp-card { padding: 24px; }
+    .exp-card p { margin-top: var(--space-3); }
+    .card { padding: 24px; }
+    .card h3 { margin-bottom: var(--space-2); }
+    .card p { margin-bottom: var(--space-3); }
+
+    @media (prefers-reduced-motion: reduce) {
+      .tilt, .glow, .glow::before, .tilt .glare,
+      .skills li, .nav-links a, .mobile-menu a,
+      .social-row a, .btn, .card a.link, .car-btns button {
+        transition: none !important;
+        will-change: auto;
+      }
+    }
   </style>
 </head>
 
